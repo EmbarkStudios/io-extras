@@ -25,11 +25,52 @@ use std::os::windows::io::{FromRawHandle, RawHandle};
 use std::sync::atomic::AtomicU16;
 use std::sync::atomic::Ordering::SeqCst;
 use std::{cmp, ptr, str};
-use windows_sys::Win32::Foundation::{ERROR_INVALID_HANDLE, HANDLE, INVALID_HANDLE_VALUE};
-use windows_sys::Win32::System::Console::{
-    GetConsoleMode, GetStdHandle, ReadConsoleW, WriteConsoleW, CONSOLE_READCONSOLE_CONTROL,
-    STD_ERROR_HANDLE, STD_HANDLE, STD_INPUT_HANDLE, STD_OUTPUT_HANDLE,
-};
+
+#[allow(non_camel_case_types, non_snake_case)]
+mod bindings {
+    pub type WIN32_ERROR = u32;
+    pub const ERROR_INVALID_HANDLE: WIN32_ERROR = 6;
+
+    pub const INVALID_HANDLE_VALUE: isize = -1;
+
+    pub type BOOL = i32;
+    pub type HANDLE = isize;
+
+    pub type CONSOLE_MODE = u32;
+
+    pub type STD_HANDLE = u32;
+    pub const STD_INPUT_HANDLE: STD_HANDLE = 4294967286;
+    pub const STD_OUTPUT_HANDLE: STD_HANDLE = 4294967285;
+    pub const STD_ERROR_HANDLE: STD_HANDLE = 4294967284;
+
+    #[repr(C)]
+    pub struct CONSOLE_READCONSOLE_CONTROL {
+        pub nLength: u32,
+        pub nInitialChars: u32,
+        pub dwCtrlWakeupMask: u32,
+        pub dwControlKeyState: u32,
+    }
+    #[link(name = "kernel32", kind = "raw-dylib")]
+    extern "system" {
+        pub fn GetConsoleMode(hConsoleHandle: HANDLE, lpMode: *mut CONSOLE_MODE) -> BOOL;
+        pub fn GetStdHandle(nStdHandle: STD_HANDLE) -> HANDLE;
+        pub fn ReadConsoleW(
+            hConsoleInput: HANDLE,
+            lpBuffer: *mut std::ffi::c_void,
+            nNumberOfCharsToRead: u32,
+            lpNumberOfCharsRead: *mut u32,
+            pInputControl: *const CONSOLE_READCONSOLE_CONTROL,
+        ) -> BOOL;
+        pub fn WriteConsoleW(
+            hConsoleOutput: HANDLE,
+            lpBuffer: *const std::ffi::c_void,
+            nNumberOfCharsToWrite: u32,
+            lpNumberOfCharsWritten: *mut u32,
+            lpReserved: *const std::ffi::c_void,
+        ) -> BOOL;
+    }
+}
+use bindings::*;
 
 static SURROGATE: AtomicU16 = AtomicU16::new(0);
 

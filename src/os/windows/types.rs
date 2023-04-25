@@ -11,7 +11,8 @@ use std::mem::forget;
 use std::os::windows::io::{
     AsRawHandle, AsRawSocket, FromRawHandle, FromRawSocket, IntoRawHandle, IntoRawSocket, RawSocket,
 };
-use windows_sys::Win32::Networking::WinSock::INVALID_SOCKET;
+
+pub const INVALID_SOCKET: i32 = -1;
 
 /// `HandleOrSocket` variant of io-lifetimes'
 /// `BorrowedHandle`/`BorrowedSocket`.
